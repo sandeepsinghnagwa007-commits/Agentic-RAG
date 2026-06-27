@@ -1,0 +1,50 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String             @id @default(uuid())
+  email     String             @unique
+  password  String             // Hashed password
+  name      String?
+  role      String             @default("STUDENT")
+  createdAt DateTime           @default(now())
+  progress  UserProgress[]
+  documents UploadedDocument[]
+}
+
+model UserProgress {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stepName  String   // "INGESTION", "RETRIEVAL", "GENERATION"
+  status    String   // "NOT_STARTED", "IN_PROGRESS", "COMPLETED"
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, stepName])
+}
+
+model UploadedDocument {
+  id         String          @id @default(uuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  content    String          // Full text content
+  chunkCount Int
+  createdAt  DateTime        @default(now())
+  chunks     DocumentChunk[]
+}
+
+model DocumentChunk {
+  id          String           @id @default(uuid())
+  documentId  String
+  document    UploadedDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  text        String
+  chunkIndex  Int
+  embedding   String?          // Serialized JSON array of float embeddings
+  createdAt   DateTime         @default(now())
+}
